@@ -23,16 +23,22 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   if (!session) {
     return {
       redirect: {
-        destination: "/api/auth/signin", 
-        permanent: false, 
+        destination: "/auth/signin",
+        permanent: false,
       },
     };
   }
 
   const caller = createCaller({ session, db });
   const userInfo = await caller.user.getById({ id: session.user.id });
+  
   if (!userInfo) {
-    redirect('/auth/signin');
+    return {
+      redirect: {
+        destination: "/auth/signin",
+        permanent: false,
+      },
+    };
   }
   
   return {
