@@ -9,55 +9,121 @@ datasource db {
 }
 
 model User {
-    id            String   @id @default(cuid())
+    id            String    @id @default(cuid())
     name          String?
-    email         String   @unique
-    password      String 
+    email         String    @unique
+    password      String
     emailVerified DateTime?
     image         String?
-    role          Role     @default(MEMBER)
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
+    role          Role      @default(MEMBER)
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
     deletedAt     DateTime?
-    
+
     // Relations
-    organization   Organization? @relation("OrganizationUsers", fields: [organizationId], references: [id])
+    organization  Organization? @relation("OrganizationUsers", fields: [organizationId], references: [id])
     organizationId String?
-    invites        OrganizationInvite[] @relation("UserInvites")
+
+    invites       OrganizationInvite[] @relation("UserInvites")
+
+    createdTasks  Task[]               @relation("TaskCreator")       // Tasks created by this user
+    assignedTasks TaskAssignment[]                                   // Tasks this user is assigned to
+    assignedTasksByMe TaskAssignment[] @relation("AssignedBy")
+}
+
+enum Role {
+    ADMIN
+    MEMBER
 }
 
 model Organization {
-    id        String   @id @default(cuid())
+    id        String             @id @default(cuid())
     name      String
-    domain    String   @unique
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    domain    String             @unique
+    createdAt DateTime           @default(now())
+    updatedAt DateTime           @updatedAt
     deletedAt DateTime?
 
     // Relations
-    users     User[]   @relation("OrganizationUsers")
+    users     User[]             @relation("OrganizationUsers")
     invites   OrganizationInvite[]
+
+    tasks     Task[]             @relation("OrganizationTasks") // Tasks belonging to this organization
 }
 
 model OrganizationInvite {
-    id             String   @id @default(cuid())
-    email          String   @unique
-    accepted       Boolean  @default(false)
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+    id             String           @id @default(cuid())
+    email          String           @unique
+    accepted       Boolean          @default(false)
+    createdAt      DateTime         @default(now())
+    updatedAt      DateTime         @updatedAt
     deletedAt      DateTime?
 
     // Relations
-    organization   Organization @relation(fields: [organizationId], references: [id])
+    organization   Organization     @relation(fields: [organizationId], references: [id])
     organizationId String
-    invitedBy      User        @relation("UserInvites", fields: [invitedById], references: [id])
+    invitedBy      User             @relation("UserInvites", fields: [invitedById], references: [id])
     invitedById    String
 
     @@index([organizationId])
     @@index([invitedById])
 }
 
-enum Role {
-    ADMIN
-    MEMBER
+model Task {
+    id            String       @id @default(cuid())
+    title         String       // For intuitive interface for task creation
+    description   String?      // For detailed task descriptions
+    status        TaskStatus   @default(TODO) // For tracking
+    priority      TaskPriority @default(MEDIUM) // For priorities
+    dueDate       DateTime?    // For setting deadlines
+
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+    deletedAt     DateTime?
+
+    // Relations
+    // A task belongs to one organization
+    organization  Organization @relation("OrganizationTasks", fields: [organizationId], references: [id])
+    organizationId String
+
+    // A task is created by one user
+    createdBy     User         @relation("TaskCreator", fields: [createdById], references: [id])
+    createdById   String
+
+    // Many-to-many relationship for assigning team members (via TaskAssignment join table)
+    assignments   TaskAssignment[]
+}
+
+enum TaskStatus {
+    TODO          // Not started
+    IN_PROGRESS   // Actively being worked on
+    DONE          // Completed
+    BLOCKED       // Unable to proceed due to an impediment
+    ARCHIVED      // Old task, no longer active
+}
+
+enum TaskPriority {
+    LOW
+    MEDIUM
+    HIGH
+    URGENT
+}
+
+// Join table for assigning users to tasks (many-to-many)
+model TaskAssignment {
+    id          String   @id @default(cuid())
+    assignedAt  DateTime @default(now())
+
+    // Relations
+    task        Task     @relation(fields: [taskId], references: [id])
+    taskId      String
+    assignee    User     @relation(fields: [assigneeId], references: [id])
+    assigneeId  String
+    assignedBy  User     @relation("AssignedBy", fields: [assignedById], references: [id]) 
+    assignedById String
+
+    @@unique([taskId, assigneeId]) // Ensures a user is assigned to a task only once
+    @@index([taskId])
+    @@index([assigneeId])
+    @@index([assignedById])
 }
