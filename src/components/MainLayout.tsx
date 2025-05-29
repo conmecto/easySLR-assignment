@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Header from './Header';
+import TasksMainLayout from './TasksMainLayout';
 
 interface MainLayoutProps {
   userInfo: any;
@@ -15,7 +16,7 @@ const MainLayout = ({ userInfo }: MainLayoutProps) => {
         {
           userInfo.organization ? 
           (
-            <></>
+            <TasksMainLayout />
           ) : (
             <div className="flex flex-col items-center justify-center py-20">
               <p className="mb-4 text-lg font-semibold text-gray-700">
