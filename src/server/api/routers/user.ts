@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { hash } from "bcrypt";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 
 export const userRouter = createTRPCRouter({
   create: publicProcedure
@@ -32,5 +32,33 @@ export const userRouter = createTRPCRouter({
 
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
+    }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({
+        where: { id: input.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              domain: true,
+            },
+          }
+        },
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      return user;
     }),
 });
