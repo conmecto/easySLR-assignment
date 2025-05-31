@@ -1,5 +1,6 @@
 import { Task } from "@prisma/client";
 import { api } from "~/utils/api";
+import Link from "next/link";
 
 const PRIORITY_COLORS = {
   LOW: "bg-gray-200",
@@ -19,7 +20,9 @@ export default function TaskCard({ task }: { task: Task }) {
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-start">
-        <h4 className="font-medium">{task.title}</h4>
+        <Link href={`/task/${task.id}`} className="hover:text-blue-600">
+          <h4 className="font-medium">{task.title}</h4>
+        </Link>
         <span className={`px-2 py-1 rounded text-xs ${PRIORITY_COLORS[task.priority]}`}>
           {task.priority}
         </span>

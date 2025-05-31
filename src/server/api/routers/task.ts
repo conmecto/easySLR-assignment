@@ -115,4 +115,115 @@ export const taskRouter = createTRPCRouter({
 
       return task;
     }),
+
+  getById: protectedProcedure
+    .input(z.string())
+    .query(async ({ ctx, input: taskId }) => {
+      const task = await ctx.db.task.findUnique({
+        where: { id: taskId },
+        include: {
+          createdBy: true,
+          assignments: {
+            include: {
+              assignee: true,
+              assignedBy: true,
+            },
+          },
+        },
+      });
+
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Verify user has access to this task
+      const user = await ctx.db.user.findUnique({
+        where: { id: ctx.session.user.id },
+        include: { organization: true }
+      });
+
+      if (!user?.organization || task.organizationId !== user.organization.id) {
+        throw new Error("Unauthorized");
+      }
+
+      return task;
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        status: z.enum(["TODO", "IN_PROGRESS", "DONE", "BLOCKED", "ARCHIVED"]),
+        priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
+        dueDate: z.date().optional().nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const task = await ctx.db.task.update({
+        where: { id: input.taskId },
+        data: {
+          title: input.title,
+          description: input.description,
+          status: input.status,
+          priority: input.priority,
+          dueDate: input.dueDate,
+        },
+        include: {
+          createdBy: true,
+          assignments: {
+            include: {
+              assignee: true,
+              assignedBy: true,
+            },
+          },
+        },
+      });
+
+      return task;
+    }),
+
+  assignUser: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        assigneeId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const assignment = await ctx.db.taskAssignment.create({
+        data: {
+          taskId: input.taskId,
+          assigneeId: input.assigneeId,
+          assignedById: ctx.session.user.id,
+        },
+        include: {
+          assignee: true,
+          assignedBy: true,
+        },
+      });
+
+      return assignment;
+    }),
+
+  removeAssignment: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        assigneeId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.taskAssignment.delete({
+        where: {
+          taskId_assigneeId: {
+            taskId: input.taskId,
+            assigneeId: input.assigneeId,
+          },
+        },
+      });
+
+      return { success: true };
+    }),
 });

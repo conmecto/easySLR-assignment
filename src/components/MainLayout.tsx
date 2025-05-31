@@ -1,19 +1,21 @@
 import Link from 'next/link';
 import Header from './Header';
 import TasksMainLayout from './TasksMainLayout';
+import { ReactNode } from 'react';
 
 interface MainLayoutProps {
   userInfo: any;
+  children?: ReactNode;
 }
 
-const MainLayout = ({ userInfo }: MainLayoutProps) => {
+const MainLayout = ({ userInfo, children }: MainLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="sticky top-0 z-10"> 
         <Header userInfo={userInfo} />
       </div>
       <div className="flex-1 flex flex-col max-w-7xl mx-auto w-full overflow-y-auto px-4 sm:px-6 lg:px-8 py-8">
-        {
+        {children || (
           userInfo.organization ? 
           (
             <TasksMainLayout />
@@ -30,7 +32,7 @@ const MainLayout = ({ userInfo }: MainLayoutProps) => {
               </Link>
             </div>
           )
-        }
+        )}
       </div>
     </div>
   );
