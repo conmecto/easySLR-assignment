@@ -16,7 +16,7 @@ interface OrganizationPageProps {
 }
 
 export default function OrganizationPage({ userInfo, invite }: OrganizationPageProps) {
-console.log('invite', invite)
+
   return (
     <div className="min-h-screen bg-white">
       <Header userInfo={userInfo} />
