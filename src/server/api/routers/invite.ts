@@ -107,4 +107,40 @@ export const inviteRouter = createTRPCRouter({
 
       return invites;
     }),
+
+  acceptInvite: protectedProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const invite = await ctx.db.organizationInvite.findUnique({
+        where: { id: input.inviteId },
+        include: { organization: true }
+      });
+
+      if (!invite) {
+        throw new Error("Invite not found");
+      }
+
+      if (invite.accepted) {
+        throw new Error("Invite has already been accepted");
+      }
+
+      if (invite.email !== ctx.session.user.email) {
+        throw new Error("This invite is not for your email address");
+      }
+
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: {
+          organizationId: invite.organizationId,
+          role: "MEMBER"
+        }
+      });
+
+      await ctx.db.organizationInvite.update({
+        where: { id: input.inviteId },
+        data: { accepted: true }
+      });
+
+      return { success: true };
+    }),
 });
