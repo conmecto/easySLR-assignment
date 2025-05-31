@@ -10,14 +10,13 @@ import InviteMember from '~/components/InviteMember';
 import { createCaller } from "~/server/api/root";
 import { db } from "~/server/db";
 
-
 interface OrganizationPageProps {
   userInfo: any;
-  invite: any;
+  invite?: any;
 }
 
 export default function OrganizationPage({ userInfo, invite }: OrganizationPageProps) {
-
+console.log('invite', invite)
   return (
     <div className="min-h-screen bg-white">
       <Header userInfo={userInfo} />
@@ -68,13 +67,19 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   if (!userInfo) {
     redirect('/auth/signin');
   }
-  const invite = await caller.invite.checkInvite({ email: "user@example.com" });
+  const invite = await caller.invite.checkInvite({ email: userInfo.email });
 
   return {
     props: {
       session,
       userInfo,
-      invite
+      ...(invite ? [{
+        invite: {
+          ...invite,
+          createdAt: invite?.createdAt.toISOString(),
+          updatedAt: invite?.updatedAt.toISOString(),
+        }
+      }] : []),
     },
   };
 }

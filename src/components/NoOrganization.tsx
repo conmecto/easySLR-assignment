@@ -1,4 +1,6 @@
 import CreateOrganization from "./CreateOrganization";
+import { api } from "~/utils/api";
+import { useState } from "react";
 
 interface NoOrganizationProps {
   userInfo: any;
@@ -6,6 +8,26 @@ interface NoOrganizationProps {
 }
 
 const NoOrganization = ({ userInfo, invite }: NoOrganizationProps) => {
+  const [isAccepting, setIsAccepting] = useState(false);
+  const utils = api.useUtils();
+  
+  const acceptInvite = api.invite.acceptInvite.useMutation({
+    onSuccess: () => {
+      utils.user.getById.invalidate();
+      window.location.href = '/dashboard';
+    },
+    onError: (error) => {
+      alert(error.message);
+      setIsAccepting(false);
+    }
+  });
+
+  const handleAcceptInvite = async () => {
+    if (!invite) return;
+    setIsAccepting(true);
+    acceptInvite.mutate({ inviteId: invite.id });
+  };
+
   return (
     <div className="flex flex-col py-16">
       <div className="flex flex-col w-full mb-8">
@@ -23,15 +45,13 @@ const NoOrganization = ({ userInfo, invite }: NoOrganizationProps) => {
                   Invited by: {invite.invitedBy?.name || invite.invitedBy?.email || "Admin"}
                 </div>
               </div>
-              <form action={`/api/organization/accept-invite`} method="POST">
-                <input type="hidden" name="inviteId" value={invite.id} />
-                <button
-                  type="submit"
-                  className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                  Join
-                </button>
-              </form>
+              <button
+                onClick={handleAcceptInvite}
+                disabled={isAccepting}
+                className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAccepting ? 'Joining...' : 'Join'}
+              </button>
             </div>
           ) : (
             <div className="flex justify-center text-gray-500">
