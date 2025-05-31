@@ -7,7 +7,7 @@ import {
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import { compare } from "bcrypt";
+import bcrypt from "bcryptjs";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         
-        const isPasswordValid = await compare(
+        const isPasswordValid = await bcrypt.compare(
           credentials.password,
           user.password
         );

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { hash } from "bcrypt";
+import bcrypt from "bcryptjs";
 import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 
 export const userRouter = createTRPCRouter({
@@ -20,7 +20,7 @@ export const userRouter = createTRPCRouter({
         throw new Error("User already exists with this email");
       }
 
-      const hashedPassword = await hash(input.password, 12);
+      const hashedPassword = await bcrypt.hash(input.password, 12);
 
       const user = await ctx.db.user.create({
         data: {
